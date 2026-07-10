@@ -1,0 +1,24 @@
+# Django secrets and environment variables
+.env
+*.env
+db.sqlite3
+__pycache__/
+*.pyc
+
+# React dependencies and builds
+node_modules/
+dist/
+build/
+.env.local
+# Virtual environments
+venv/
+.venv/
+
+# Editor and OS files
+.vscode/
+.idea/
+.DS_Store
+
+# Python test artifacts
+.pytest_cache/
+coverage/

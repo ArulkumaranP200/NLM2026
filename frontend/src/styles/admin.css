@@ -1,0 +1,135 @@
+/* ===== ADMIN & DEVELOPER PANELS ===== */
+.admin-page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 36px 24px;
+}
+
+.developer-page .page-header h2 { color: #1e8449; }
+
+/* Admin Stats */
+.admin-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 16px;
+  margin-bottom: 28px;
+}
+
+/* Tab Bar */
+.tab-bar {
+  display: flex;
+  gap: 4px;
+  background: #fff;
+  padding: 6px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.tab {
+  padding: 9px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #777;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-transform: capitalize;
+}
+
+.tab:hover { background: #f5f5f5; color: #333; }
+
+.tab.active {
+  background: linear-gradient(135deg, #c0392b, #e74c3c);
+  color: #fff;
+  font-weight: 600;
+}
+
+.developer-page .tab.active {
+  background: linear-gradient(135deg, #1e8449, #27ae60);
+}
+
+/* Admin Table */
+.admin-table-wrap {
+  background: #fff;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+  overflow-x: auto;
+}
+
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.admin-table thead {
+  background: linear-gradient(135deg, #c0392b, #e74c3c);
+  color: #fff;
+}
+
+.developer-page .admin-table thead {
+  background: linear-gradient(135deg, #1e8449, #27ae60);
+}
+
+.admin-table th {
+  padding: 14px 16px;
+  text-align: left;
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: 0.3px;
+}
+
+.admin-table td {
+  padding: 13px 16px;
+  border-bottom: 1px solid #f5f5f5;
+  vertical-align: middle;
+}
+
+.admin-table tbody tr:hover { background: #fafafa; }
+.admin-table tbody tr:last-child td { border-bottom: none; }
+
+.dev-row { background: #f0fff4 !important; }
+
+.action-btns { display: flex; gap: 8px; flex-wrap: wrap; }
+
+.role-select {
+  padding: 5px 10px;
+  border-radius: 6px;
+  border: 1.5px solid #ddd;
+  font-size: 13px;
+  background: #fff;
+  cursor: pointer;
+  width: auto;
+}
+
+/* Table Avatar */
+.table-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #fdecea;
+}
+
+.table-avatar-placeholder {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #c0392b, #e74c3c);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  font-weight: 700;
+  color: #fff;
+}
+
+@media (max-width: 768px) {
+  .admin-page { padding: 20px 16px; }
+  .admin-table th, .admin-table td { padding: 10px 12px; }
+}

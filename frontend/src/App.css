@@ -1,0 +1,11 @@
+/* App.css - imports all page styles */
+@import './styles/global.css';
+@import './styles/navbar.css';
+@import './styles/home.css';
+@import './styles/auth.css';
+@import './styles/register.css';
+@import './styles/dashboard.css';
+@import './styles/editprofile.css';
+@import './styles/profilelist.css';
+@import './styles/profiledetail.css';
+@import './styles/admin.css';
