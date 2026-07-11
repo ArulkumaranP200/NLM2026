@@ -1,0 +1,28 @@
+# Render deployment manifest for the Django backend only.
+# Connect this GitHub repository to Render, choose the `main` branch,
+# and Render will use this manifest to create the backend service and DB.
+services:
+  - type: web
+    name: nlm-backend
+    env: python
+    branch: main
+    root: .
+    buildCommand: pip install -r backend/requirements.txt && python backend/manage.py collectstatic --noinput
+    startCommand: gunicorn backend.matrimony.wsgi --bind 0.0.0.0:$PORT
+    env:
+      SECRET_KEY: ""
+      DEBUG: "false"
+      DB_HOST: ""
+      DB_NAME: ""
+      DB_USER: ""
+      DB_PASSWORD: ""
+      DB_PORT: ""
+      ALLOWED_HOSTS: ""
+      CORS_ALLOWED_ORIGINS: ""
+      GOOGLE_CLIENT_ID: ""
+      SECURE_SSL_REDIRECT: "true"
+
+databases:
+  - name: nlm-db
+    engine: postgresql
+    plan: starter
