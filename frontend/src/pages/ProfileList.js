@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../api/axios';
 
@@ -6,6 +6,7 @@ export default function ProfileList() {
   const [profiles, setProfiles] = useState([]);
   const [filters, setFilters] = useState({ gender: '', religion: '', city: '' });
   const [loading, setLoading] = useState(true);
+  const initialFilters = useRef(filters);
 
   const fetchProfiles = async () => {
     setLoading(true);
@@ -18,7 +19,20 @@ export default function ProfileList() {
     setLoading(false);
   };
 
-  useEffect(() => { fetchProfiles(); }, []);
+  useEffect(() => {
+    const loadInitialProfiles = async () => {
+      setLoading(true);
+      const params = new URLSearchParams();
+      if (initialFilters.current.gender) params.append('gender', initialFilters.current.gender);
+      if (initialFilters.current.religion) params.append('religion', initialFilters.current.religion);
+      if (initialFilters.current.city) params.append('city', initialFilters.current.city);
+      const { data } = await api.get(`/profiles/?${params}`);
+      setProfiles(data);
+      setLoading(false);
+    };
+
+    loadInitialProfiles();
+  }, []);
 
   const handleFilter = (e) => setFilters({ ...filters, [e.target.name]: e.target.value });
 

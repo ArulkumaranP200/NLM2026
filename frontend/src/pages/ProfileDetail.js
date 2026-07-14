@@ -13,7 +13,7 @@ export default function ProfileDetail() {
       .then(({ data }) => setProfile(data))
       .catch(() => navigate('/profiles'))
       .finally(() => setLoading(false));
-  }, [id]);
+  }, [id, navigate]);
 
   if (loading) return <div className="loading-screen"><div className="spinner"></div></div>;
   if (!profile) return null;
