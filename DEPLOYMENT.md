@@ -60,8 +60,10 @@ A GitHub Actions workflow is provided at `.github/workflows/deploy.yml`.
 The workflow will:
 
 - build the frontend
-- deploy the frontend to Vercel
+- deploy the frontend to Vercel using the locally built output
 - trigger a backend deploy on Render
+
+> Use the GitHub Actions workflow instead of Vercel's direct GitHub build when the Hobby plan blocks private-repo installs. The `deploy_manual.yml` workflow is provided so you can manually trigger a deploy from GitHub Actions.
 
 ## Notes
 
