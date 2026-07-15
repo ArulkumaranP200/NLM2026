@@ -11,8 +11,13 @@ def _csv_list(value):
 
 SECRET_KEY = config('SECRET_KEY')
 DEBUG = config('DEBUG', default=False, cast=bool)
-ALLOWED_HOSTS = _csv_list(config('ALLOWED_HOSTS', default='localhost,127.0.0.1'))
-
+# ALLOWED_HOSTS = _csv_list(config('ALLOWED_HOSTS', default='localhost,127.0.0.1'))
+ALLOWED_HOSTS = _csv_list(
+    config(
+        "ALLOWED_HOSTS",
+        default="localhost,127.0.0.1,nlm-backend-hlhp.onrender.com"
+    )
+)
 
 INSTALLED_APPS = [
     'django.contrib.admin',
