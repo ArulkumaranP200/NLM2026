@@ -2,14 +2,14 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
+from django.http import HttpResponse
 
-def test(request):
-    return HttpResponse("Backend is updated!")
+
 urlpatterns = [
-    path("test/", test),
-    path('admin/', admin.site.urls),
-    path('api/auth/', include('accounts.urls')),
-    path('api/profiles/', include('profiles.urls')),
+    
+    path("admin/", admin.site.urls),
+    path("api/auth/", include("accounts.urls")),
+    path("api/profiles/", include("profiles.urls")),
 ]
 
 if settings.DEBUG:
