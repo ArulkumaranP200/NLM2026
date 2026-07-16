@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://nlm-backend-hlhp.onrender.com/api';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://nlm2026.onrender.com/api';
 
 const api = axios.create({ baseURL: API_BASE_URL });
 
