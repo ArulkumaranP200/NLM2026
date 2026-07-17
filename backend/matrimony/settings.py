@@ -82,6 +82,15 @@ DATABASES = {
     )
 }
 
+# dj_database_url resolves a relative sqlite path (e.g. "sqlite:///db.sqlite3") against the
+# process's current working directory, not BASE_DIR — so the same DATABASE_URL can silently
+# point at a different file depending on where `manage.py`/gunicorn is launched from. Anchor
+# it to BASE_DIR so the database used is always the same regardless of launch cwd.
+if DATABASES["default"]["ENGINE"] == "django.db.backends.sqlite3":
+    _db_name = DATABASES["default"]["NAME"]
+    if not Path(_db_name).is_absolute():
+        DATABASES["default"]["NAME"] = str(BASE_DIR / _db_name)
+
 AUTH_PASSWORD_VALIDATORS = [
     {
         'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'

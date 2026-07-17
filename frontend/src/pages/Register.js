@@ -1,45 +1,61 @@
 import { useState, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { useGoogleLogin } from '@react-oauth/google';
+import { GoogleLogin } from '@react-oauth/google';
 import api from '../api/axios';
 import toast from 'react-hot-toast';
 import '../styles/register.css';
 import { INDIA_STATES, INDIA_STATES_CITIES } from '../data/indiaCities';
+import { TN_CASTES as TN_CASTES_BASE } from '../data/casteList';
 
 const INITIAL = {
   // Account
   full_name: '', email: '', password: '', confirm_password: '',
   // Personal
-  phone: '', date_of_birth: '', gender: '', religion: '',
-  mother_tongue: '', marital_status: '', caste: '',
+  phone: '', date_of_birth: '', gender: '', gender_other: '',
+  religion: '', religion_other: '',
+  mother_tongue: '', mother_tongue_other: '',
+  marital_status: '', marital_status_other: '',
+  caste: '', caste_other: '',
   height: '', weight: '', present_address: '',
   // Location & Career
   city: '', state: '', country: 'India',
-  education: '', occupation: '', annual_income: '',
+  education: '', education_other: '', degree: '', occupation: '', annual_income: '',
+  // Family
+  father_name: '', father_occupation: '', mother_name: '', mother_occupation: '',
+  number_of_brothers: '', number_of_sisters: '', sibling_details: '',
   // Horoscope
-  zodiac_sign: '', nakshatra: '', birth_place: '', birth_time: '',
+  zodiac_sign: '', nakshatra: '', birth_place: '',
+  birth_time_hour: '', birth_time_minute: '', birth_time_period: '',
   // About
   about_me: '',
 };
 
-const STEPS = ['Account', 'Personal', 'Location & Career', 'Horoscope', 'Photo & About'];
+const STEPS = ['Account', 'Personal', 'Location & Career', 'Family', 'Horoscope', 'Photo & About'];
+
+const INDIAN_LANGUAGES = [
+  'Tamil', 'Telugu', 'Kannada', 'Malayalam', 'Hindi', 'Marathi', 'Gujarati', 'Punjabi',
+  'Bengali', 'Odia', 'Assamese', 'Urdu', 'Sanskrit', 'Konkani', 'Kashmiri', 'Sindhi',
+  'Manipuri', 'Bodo', 'Dogri', 'Maithili', 'Nepali', 'Santali', 'Tulu', 'English', 'Other',
+];
+
+const TN_CASTES = [...TN_CASTES_BASE, 'Other', 'No / Prefer not to say'];
 
 const ZODIAC_SIGNS = [
-  'Aries (Mesha)', 'Taurus (Vrishabha)', 'Gemini (Mithuna)', 'Cancer (Karka)',
-  'Leo (Simha)', 'Virgo (Kanya)', 'Libra (Tula)', 'Scorpio (Vrishchika)',
-  'Sagittarius (Dhanu)', 'Capricorn (Makara)', 'Aquarius (Kumbha)', 'Pisces (Meena)',
+  'Mesham (Aries)', 'Rishabam (Taurus)', 'Mithunam (Gemini)', 'Kadagam (Cancer)',
+  'Simmam (Leo)', 'Kanni (Virgo)', 'Thulam (Libra)', 'Viruchigam (Scorpio)',
+  'Dhanusu (Sagittarius)', 'Magaram (Capricorn)', 'Kumbam (Aquarius)', 'Meenam (Pisces)',
 ];
 
 const NAKSHATRAS = [
-  'Ashwini', 'Bharani', 'Krittika', 'Rohini', 'Mrigashira', 'Ardra',
-  'Punarvasu', 'Pushya', 'Ashlesha', 'Magha', 'Purva Phalguni', 'Uttara Phalguni',
-  'Hasta', 'Chitra', 'Swati', 'Vishakha', 'Anuradha', 'Jyeshtha',
-  'Mula', 'Purva Ashadha', 'Uttara Ashadha', 'Shravana', 'Dhanishtha',
-  'Shatabhisha', 'Purva Bhadrapada', 'Uttara Bhadrapada', 'Revati',
+  'Aswini', 'Bharani', 'Karthigai', 'Rohini', 'Mirugasirisham', 'Thiruvathirai',
+  'Punarpoosam', 'Poosam', 'Ayilyam', 'Magam', 'Pooram', 'Uthiram',
+  'Hastam', 'Chithirai', 'Swathi', 'Visakam', 'Anusham', 'Kettai',
+  'Moolam', 'Pooradam', 'Uthiradam', 'Thiruvonam', 'Avittam',
+  'Sadayam', 'Poorattathi', 'Uthirattathi', 'Revathi',
 ];
 
-function Field({ name, label, type = 'text', placeholder, required, form, errors, onChange, children }) {
+function Field({ name, label, type = 'text', placeholder, required, form, errors, onChange, children, ...rest }) {
   return (
     <div className="form-group">
       <label>{label} {required && <span className="required">*</span>}</label>
@@ -49,6 +65,7 @@ function Field({ name, label, type = 'text', placeholder, required, form, errors
           value={form[name]} onChange={onChange}
           className={errors[name] ? 'input-error' : ''}
           autoComplete="off"
+          {...rest}
         />
       )}
       {errors[name] && <span className="field-error">{errors[name]}</span>}
@@ -73,7 +90,17 @@ export default function Register() {
     setErrors(er => ({ ...er, [name]: '' }));
   };
 
+  const handlePhoneChange = (e) => {
+    const digits = e.target.value.replace(/\D/g, '').slice(0, 10);
+    setForm(f => ({ ...f, phone: digits }));
+    setErrors(er => ({ ...er, phone: '' }));
+  };
+
   const handlePhoto = (e) => {
+    // Blur the hidden file input immediately: on some browsers, focus drifts to the
+    // next focusable element (the "Create Account" submit button) once the native
+    // file dialog closes, and a stray Enter/Space there submitted the form early.
+    fileRef.current.blur();
     const file = e.target.files[0];
     if (!file) return;
     if (!file.type.startsWith('image/')) { toast.error('Please upload a valid image file'); return; }
@@ -82,9 +109,9 @@ export default function Register() {
     setPhotoPreview(URL.createObjectURL(file));
   };
 
-  const handleGoogleSuccess = async (tokenResponse) => {
+  const handleGoogleSuccess = async (credentialResponse) => {
     try {
-      const { data } = await api.post('/auth/google/', { credential: tokenResponse.credential });
+      const { data } = await api.post('/auth/google/', { credential: credentialResponse.credential });
       login(data);
       toast.success(`Welcome! Your ID is ${data.user.user_id}. Please complete your profile.`);
       navigate('/profile/edit');
@@ -93,21 +120,18 @@ export default function Register() {
     }
   };
 
-  const googleLogin = useGoogleLogin({
-    onSuccess: handleGoogleSuccess,
-    onError: () => toast.error('Google sign up failed'),
-    flow: 'implicit',
-  });
-
   const validateStep = () => {
     const e = {};
     if (step === 0) {
       if (!form.full_name.trim()) e.full_name = 'Full name is required';
       else if (form.full_name.trim().length < 3) e.full_name = 'Name must be at least 3 characters';
+      else if (form.full_name.trim().length > 150) e.full_name = 'Name must be less than 150 characters';
+      else if (!/^[A-Za-z\s.'-]+$/.test(form.full_name.trim())) e.full_name = 'Name can only contain letters, spaces, and . \' -';
       if (!form.email) e.email = 'Email is required';
       else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) e.email = 'Enter a valid email address';
       if (!form.password) e.password = 'Password is required';
       else if (form.password.length < 8) e.password = 'Password must be at least 8 characters';
+      else if (form.password.length > 128) e.password = 'Password must be less than 128 characters';
       else if (!/(?=.*[A-Z])/.test(form.password)) e.password = 'Must contain at least one uppercase letter';
       else if (!/(?=.*[0-9])/.test(form.password)) e.password = 'Must contain at least one number';
       if (!form.confirm_password) e.confirm_password = 'Please confirm your password';
@@ -115,31 +139,93 @@ export default function Register() {
     }
     if (step === 1) {
       if (!form.phone) e.phone = 'Phone number is required';
-      else if (!/^\+?[0-9]{10,15}$/.test(form.phone)) e.phone = 'Enter a valid phone number (10-15 digits)';
+      else if (!/^[0-9]{10}$/.test(form.phone)) e.phone = 'Enter a valid 10-digit phone number';
       if (!form.date_of_birth) e.date_of_birth = 'Date of birth is required';
       else {
         const dob = new Date(form.date_of_birth);
-        const today = new Date();
-        const age = today.getFullYear() - dob.getFullYear();
-        if (age < 18) e.date_of_birth = 'You must be at least 18 years old';
-        if (age > 80) e.date_of_birth = 'Please enter a valid date of birth';
+        if (isNaN(dob.getTime())) {
+          e.date_of_birth = 'Enter a valid date of birth';
+        } else {
+          const today = new Date();
+          if (dob > today) {
+            e.date_of_birth = 'Date of birth cannot be in the future';
+          } else {
+            let age = today.getFullYear() - dob.getFullYear();
+            const birthdayPassedThisYear =
+              today.getMonth() > dob.getMonth() ||
+              (today.getMonth() === dob.getMonth() && today.getDate() >= dob.getDate());
+            if (!birthdayPassedThisYear) age -= 1;
+            if (age < 18) e.date_of_birth = 'You must be at least 18 years old';
+            else if (age > 80) e.date_of_birth = 'Please enter a valid date of birth';
+          }
+        }
       }
       if (!form.gender) e.gender = 'Please select your gender';
+      else if (form.gender === 'other' && !form.gender_other.trim()) e.gender_other = 'Please specify your gender';
+      else if (form.gender_other.trim().length > 30) e.gender_other = 'Must be less than 30 characters';
+
       if (!form.religion) e.religion = 'Please select your religion';
-      if (!form.mother_tongue.trim()) e.mother_tongue = 'Mother tongue is required';
+      else if (form.religion === 'other' && !form.religion_other.trim()) e.religion_other = 'Please specify your religion';
+      else if (form.religion_other.trim().length > 50) e.religion_other = 'Must be less than 50 characters';
+
+      if (!form.mother_tongue) e.mother_tongue = 'Please select your mother tongue';
+      else if (form.mother_tongue === 'Other' && !form.mother_tongue_other.trim()) e.mother_tongue_other = 'Please specify your mother tongue';
+      else if (form.mother_tongue_other.trim().length > 50) e.mother_tongue_other = 'Must be less than 50 characters';
+
       if (!form.marital_status) e.marital_status = 'Please select marital status';
+      else if (form.marital_status === 'other' && !form.marital_status_other.trim()) e.marital_status_other = 'Please specify your marital status';
+      else if (form.marital_status_other.trim().length > 50) e.marital_status_other = 'Must be less than 50 characters';
+
+      if (form.caste === 'Other' && !form.caste_other.trim()) e.caste_other = 'Please specify your caste';
+      else if (form.caste_other.trim().length > 100) e.caste_other = 'Must be less than 100 characters';
+
       if (form.height && (isNaN(form.height) || form.height < 100 || form.height > 250))
         e.height = 'Enter valid height between 100–250 cm';
       if (form.weight && (isNaN(form.weight) || form.weight < 30 || form.weight > 200))
         e.weight = 'Enter valid weight between 30–200 kg';
+      if (form.present_address && form.present_address.trim().length > 300)
+        e.present_address = 'Address must be less than 300 characters';
     }
     if (step === 2) {
       if (!form.state) e.state = 'Please select your state';
       if (!form.city) e.city = form.state ? 'Please select your city' : 'Please select state first';
       if (!form.education) e.education = 'Please select your education';
+      else if (form.education === 'other' && !form.education_other.trim()) e.education_other = 'Please specify your education';
+      else if (form.education_other.trim().length > 50) e.education_other = 'Must be less than 50 characters';
+      if (form.degree && form.degree.trim().length > 100) e.degree = 'Degree must be less than 100 characters';
       if (!form.occupation.trim()) e.occupation = 'Occupation is required';
+      else if (form.occupation.trim().length > 100) e.occupation = 'Occupation must be less than 100 characters';
+      if (form.annual_income && form.annual_income.trim().length > 50)
+        e.annual_income = 'Annual income must be less than 50 characters';
     }
-    // step 3 horoscope - all optional, no required validation
+    if (step === 3) {
+      if (form.father_name && form.father_name.trim().length > 150)
+        e.father_name = 'Must be less than 150 characters';
+      if (form.father_occupation && form.father_occupation.trim().length > 100)
+        e.father_occupation = 'Must be less than 100 characters';
+      if (form.mother_name && form.mother_name.trim().length > 150)
+        e.mother_name = 'Must be less than 150 characters';
+      if (form.mother_occupation && form.mother_occupation.trim().length > 100)
+        e.mother_occupation = 'Must be less than 100 characters';
+      if (form.number_of_brothers && (isNaN(form.number_of_brothers) || form.number_of_brothers < 0 || form.number_of_brothers > 20))
+        e.number_of_brothers = 'Enter a valid number (0–20)';
+      if (form.number_of_sisters && (isNaN(form.number_of_sisters) || form.number_of_sisters < 0 || form.number_of_sisters > 20))
+        e.number_of_sisters = 'Enter a valid number (0–20)';
+      if (form.sibling_details && form.sibling_details.trim().length > 500)
+        e.sibling_details = 'Must be less than 500 characters';
+    }
+    if (step === 4) {
+      if (form.birth_place && form.birth_place.trim().length > 100)
+        e.birth_place = 'Birth place must be less than 100 characters';
+      const anyTimeField = form.birth_time_hour || form.birth_time_minute || form.birth_time_period;
+      const allTimeFields = form.birth_time_hour && form.birth_time_minute && form.birth_time_period;
+      if (anyTimeField && !allTimeFields)
+        e.birth_time = 'Please complete hour, minute and AM/PM for birth time';
+    }
+    if (step === 5) {
+      if (form.about_me && form.about_me.trim().length > 1000)
+        e.about_me = 'About Me must be less than 1000 characters';
+    }
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -147,13 +233,43 @@ export default function Register() {
   const nextStep = () => { if (validateStep()) setStep(s => s + 1); };
   const prevStep = () => setStep(s => s - 1);
 
+  const buildSubmitData = () => {
+    const data = { ...form };
+    if (data.gender === 'other') data.gender = data.gender_other.trim();
+    if (data.religion === 'other') data.religion = data.religion_other.trim();
+    if (data.marital_status === 'other') data.marital_status = data.marital_status_other.trim();
+    if (data.education === 'other') data.education = data.education_other.trim();
+    if (data.mother_tongue === 'Other') data.mother_tongue = data.mother_tongue_other.trim();
+    if (data.caste === 'Other') data.caste = data.caste_other.trim();
+    delete data.gender_other;
+    delete data.religion_other;
+    delete data.marital_status_other;
+    delete data.education_other;
+    delete data.mother_tongue_other;
+    delete data.caste_other;
+
+    if (data.birth_time_hour && data.birth_time_minute && data.birth_time_period) {
+      let h = parseInt(data.birth_time_hour, 10);
+      if (data.birth_time_period === 'AM') { if (h === 12) h = 0; }
+      else if (h !== 12) { h += 12; }
+      data.birth_time = `${String(h).padStart(2, '0')}:${String(data.birth_time_minute).padStart(2, '0')}`;
+    }
+    delete data.birth_time_hour;
+    delete data.birth_time_minute;
+    delete data.birth_time_period;
+
+    return data;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (step !== STEPS.length - 1) return;
     if (!validateStep()) return;
     setLoading(true);
     try {
+      const payload = buildSubmitData();
       const formData = new FormData();
-      Object.entries(form).forEach(([k, v]) => { if (v) formData.append(k, v); });
+      Object.entries(payload).forEach(([k, v]) => { if (v) formData.append(k, v); });
       if (photo) formData.append('photo', photo);
       const { data } = await api.post('/auth/register/', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
@@ -186,10 +302,14 @@ export default function Register() {
 
         {step === 0 && (
           <>
-            <button type="button" className="btn-google" onClick={() => googleLogin()}>
-              <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" width="20" />
-              Sign up with Google
-            </button>
+            <div className="google-btn-wrap">
+              <GoogleLogin
+                onSuccess={handleGoogleSuccess}
+                onError={() => toast.error('Google sign up failed')}
+                text="signup_with"
+                width="100%"
+              />
+            </div>
             <div className="divider"><span>or register with email</span></div>
           </>
         )}
@@ -204,7 +324,14 @@ export default function Register() {
           ))}
         </div>
 
-        <form onSubmit={handleSubmit}>
+        <form
+          onSubmit={handleSubmit}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA' && step !== STEPS.length - 1) {
+              e.preventDefault();
+            }
+          }}
+        >
 
           {/* STEP 0 — Account */}
           {step === 0 && (
@@ -224,8 +351,13 @@ export default function Register() {
             <div className="step-content">
               <h3>Personal Details</h3>
               <div className="form-grid-2">
-                <Field name="phone" label="Phone Number" placeholder="e.g. 9876543210" required {...fieldProps} />
+                <Field
+                  name="phone" label="Phone Number" placeholder="10-digit mobile number" required
+                  form={form} errors={errors} onChange={handlePhoneChange}
+                  maxLength={10} inputMode="numeric"
+                />
                 <Field name="date_of_birth" label="Date of Birth" type="date" required {...fieldProps} />
+
                 <div className="form-group">
                   <label>Gender <span className="required">*</span></label>
                   <select name="gender" value={form.gender} onChange={handleChange} className={errors.gender ? 'input-error' : ''}>
@@ -234,8 +366,16 @@ export default function Register() {
                     <option value="female">Female</option>
                     <option value="other">Other</option>
                   </select>
+                  {form.gender === 'other' && (
+                    <input
+                      name="gender_other" className="input-other" placeholder="Please specify"
+                      value={form.gender_other} onChange={handleChange}
+                    />
+                  )}
                   {errors.gender && <span className="field-error">{errors.gender}</span>}
+                  {errors.gender_other && <span className="field-error">{errors.gender_other}</span>}
                 </div>
+
                 <div className="form-group">
                   <label>Religion <span className="required">*</span></label>
                   <select name="religion" value={form.religion} onChange={handleChange} className={errors.religion ? 'input-error' : ''}>
@@ -244,21 +384,67 @@ export default function Register() {
                       <option key={r} value={r}>{r.charAt(0).toUpperCase() + r.slice(1)}</option>
                     ))}
                   </select>
+                  {form.religion === 'other' && (
+                    <input
+                      name="religion_other" className="input-other" placeholder="Please specify"
+                      value={form.religion_other} onChange={handleChange}
+                    />
+                  )}
                   {errors.religion && <span className="field-error">{errors.religion}</span>}
+                  {errors.religion_other && <span className="field-error">{errors.religion_other}</span>}
                 </div>
-                <Field name="mother_tongue" label="Mother Tongue" placeholder="e.g. Tamil, Hindi" required {...fieldProps} />
+
+                <div className="form-group">
+                  <label>Mother Tongue <span className="required">*</span></label>
+                  <select name="mother_tongue" value={form.mother_tongue} onChange={handleChange} className={errors.mother_tongue ? 'input-error' : ''}>
+                    <option value="">Select Mother Tongue</option>
+                    {INDIAN_LANGUAGES.map(l => <option key={l} value={l}>{l}</option>)}
+                  </select>
+                  {form.mother_tongue === 'Other' && (
+                    <input
+                      name="mother_tongue_other" className="input-other" placeholder="Please specify"
+                      value={form.mother_tongue_other} onChange={handleChange}
+                    />
+                  )}
+                  {errors.mother_tongue && <span className="field-error">{errors.mother_tongue}</span>}
+                  {errors.mother_tongue_other && <span className="field-error">{errors.mother_tongue_other}</span>}
+                </div>
+
                 <div className="form-group">
                   <label>Marital Status <span className="required">*</span></label>
                   <select name="marital_status" value={form.marital_status} onChange={handleChange} className={errors.marital_status ? 'input-error' : ''}>
                     <option value="">Select Status</option>
-                    <option value="never_married">Never Married</option>
+                    <option value="single">Single</option>
                     <option value="divorced">Divorced</option>
                     <option value="widowed">Widowed</option>
-                    <option value="separated">Separated</option>
+                    <option value="other">Other</option>
                   </select>
+                  {form.marital_status === 'other' && (
+                    <input
+                      name="marital_status_other" className="input-other" placeholder="Please specify"
+                      value={form.marital_status_other} onChange={handleChange}
+                    />
+                  )}
                   {errors.marital_status && <span className="field-error">{errors.marital_status}</span>}
+                  {errors.marital_status_other && <span className="field-error">{errors.marital_status_other}</span>}
                 </div>
-                <Field name="caste" label="Caste" placeholder="Enter caste (optional)" {...fieldProps} />
+
+                <div className="form-group">
+                  <label>Caste <span className="optional">(optional)</span></label>
+                  <select name="caste" value={form.caste} onChange={handleChange} className={errors.caste ? 'input-error' : ''}>
+                    <option value="">Select Caste</option>
+                    {TN_CASTES.map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                  {form.caste === 'Other' && (
+                    <input
+                      name="caste_other" className="input-other" placeholder="Please specify your caste"
+                      value={form.caste_other} onChange={handleChange}
+                    />
+                  )}
+                  {errors.caste && <span className="field-error">{errors.caste}</span>}
+                  {errors.caste_other && <span className="field-error">{errors.caste_other}</span>}
+                </div>
+
                 <Field name="height" label="Height (cm)" type="number" placeholder="e.g. 165" {...fieldProps} />
                 <Field name="weight" label="Weight (kg)" type="number" placeholder="e.g. 60" {...fieldProps} />
               </div>
@@ -324,16 +510,49 @@ export default function Register() {
                     <option value="phd">PhD</option>
                     <option value="other">Other</option>
                   </select>
+                  {form.education === 'other' && (
+                    <input
+                      name="education_other" className="input-other" placeholder="Please specify"
+                      value={form.education_other} onChange={handleChange}
+                    />
+                  )}
                   {errors.education && <span className="field-error">{errors.education}</span>}
+                  {errors.education_other && <span className="field-error">{errors.education_other}</span>}
                 </div>
+                <Field name="degree" label="Degree" placeholder="e.g. B.Tech CSE, MBBS, B.Com (optional)" {...fieldProps} />
                 <Field name="occupation" label="Occupation" placeholder="e.g. Software Engineer" required {...fieldProps} />
                 <Field name="annual_income" label="Annual Income" placeholder="e.g. 5-10 LPA (optional)" {...fieldProps} />
               </div>
             </div>
           )}
 
-          {/* STEP 3 — Horoscope */}
+          {/* STEP 3 — Family */}
           {step === 3 && (
+            <div className="step-content">
+              <h3>Family Details</h3>
+              <div className="form-grid-2">
+                <Field name="father_name" label="Father's Name" placeholder="Enter father's name (optional)" {...fieldProps} />
+                <Field name="father_occupation" label="Father's Occupation" placeholder="e.g. Retired, Business (optional)" {...fieldProps} />
+                <Field name="mother_name" label="Mother's Name" placeholder="Enter mother's name (optional)" {...fieldProps} />
+                <Field name="mother_occupation" label="Mother's Occupation" placeholder="e.g. Homemaker, Teacher (optional)" {...fieldProps} />
+                <Field name="number_of_brothers" label="Number of Brothers" type="number" placeholder="e.g. 1" min="0" max="20" {...fieldProps} />
+                <Field name="number_of_sisters" label="Number of Sisters" type="number" placeholder="e.g. 1" min="0" max="20" {...fieldProps} />
+              </div>
+              <div className="form-group" style={{ marginTop: '4px' }}>
+                <label>Sibling Details <span className="optional">(optional)</span></label>
+                <textarea
+                  name="sibling_details" rows={3}
+                  placeholder="e.g. Elder brother married, working as an engineer in Chennai"
+                  value={form.sibling_details} onChange={handleChange}
+                  className={errors.sibling_details ? 'input-error' : ''}
+                />
+                {errors.sibling_details && <span className="field-error">{errors.sibling_details}</span>}
+              </div>
+            </div>
+          )}
+
+          {/* STEP 4 — Horoscope */}
+          {step === 4 && (
             <div className="step-content">
               <div className="horoscope-header">
                 <span className="horoscope-icon">🔯</span>
@@ -344,7 +563,7 @@ export default function Register() {
               </div>
               <div className="form-grid-2">
                 <div className="form-group">
-                  <label>Zodiac Sign (Rashi)</label>
+                  <label>Zodiac Sign (Rasi)</label>
                   <select name="zodiac_sign" value={form.zodiac_sign} onChange={handleChange}>
                     <option value="">Select Zodiac Sign</option>
                     {ZODIAC_SIGNS.map(z => <option key={z} value={z}>{z}</option>)}
@@ -358,16 +577,38 @@ export default function Register() {
                   </select>
                 </div>
                 <Field name="birth_place" label="Birth Place" placeholder="e.g. Chennai, Tamil Nadu" {...fieldProps} />
-                <Field name="birth_time" label="Birth Time" type="time" placeholder="HH:MM" {...fieldProps} />
+                <div className="form-group">
+                  <label>Birth Time</label>
+                  <div className="birth-time-group">
+                    <select name="birth_time_hour" value={form.birth_time_hour} onChange={handleChange} className={errors.birth_time ? 'input-error' : ''}>
+                      <option value="">HH</option>
+                      {Array.from({ length: 12 }, (_, i) => i + 1).map(h => (
+                        <option key={h} value={h}>{String(h).padStart(2, '0')}</option>
+                      ))}
+                    </select>
+                    <select name="birth_time_minute" value={form.birth_time_minute} onChange={handleChange} className={errors.birth_time ? 'input-error' : ''}>
+                      <option value="">MM</option>
+                      {Array.from({ length: 60 }, (_, i) => i).map(m => (
+                        <option key={m} value={m}>{String(m).padStart(2, '0')}</option>
+                      ))}
+                    </select>
+                    <select name="birth_time_period" value={form.birth_time_period} onChange={handleChange} className={errors.birth_time ? 'input-error' : ''}>
+                      <option value="">AM/PM</option>
+                      <option value="AM">AM</option>
+                      <option value="PM">PM</option>
+                    </select>
+                  </div>
+                  {errors.birth_time && <span className="field-error">{errors.birth_time}</span>}
+                </div>
               </div>
               <div className="horoscope-info-box">
-                <p>🌟 Horoscope details help in finding astrologically compatible matches based on your Rashi and Nakshatra.</p>
+                <p>🌟 Horoscope details help in finding astrologically compatible matches based on your Rasi and Nakshatra.</p>
               </div>
             </div>
           )}
 
-          {/* STEP 4 — Photo & About */}
-          {step === 4 && (
+          {/* STEP 5 — Photo & About */}
+          {step === 5 && (
             <div className="step-content">
               <h3>Photo & About You</h3>
               <div className="photo-upload-section">
@@ -383,7 +624,7 @@ export default function Register() {
                   )}
                   <div className="photo-upload-overlay">{photoPreview ? 'Change Photo' : 'Upload Photo'}</div>
                 </div>
-                <input ref={fileRef} type="file" accept="image/*" onChange={handlePhoto} hidden />
+                <input ref={fileRef} type="file" accept="image/*" tabIndex={-1} onChange={handlePhoto} hidden />
                 {photoPreview && (
                   <button type="button" className="btn-remove-photo" onClick={() => { setPhoto(null); setPhotoPreview(null); }}>
                     Remove Photo
@@ -395,7 +636,9 @@ export default function Register() {
                 <textarea name="about_me" rows={4}
                   placeholder="Write a brief description about yourself, your interests, and what you're looking for..."
                   value={form.about_me} onChange={handleChange}
+                  className={errors.about_me ? 'input-error' : ''}
                 />
+                {errors.about_me && <span className="field-error">{errors.about_me}</span>}
               </div>
             </div>
           )}

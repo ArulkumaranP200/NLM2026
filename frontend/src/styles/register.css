@@ -34,6 +34,12 @@
   font-size: 14px;
 }
 
+.google-btn-wrap {
+  margin-bottom: 16px;
+  display: flex;
+  justify-content: center;
+}
+
 /* Step Indicator */
 .step-indicator {
   display: flex;
@@ -137,6 +143,13 @@
 }
 
 .field-error::before { content: '⚠ '; }
+
+.input-other { margin-top: 8px; }
+
+.birth-time-group {
+  display: flex;
+  gap: 8px;
+}
 
 /* Photo Upload */
 .photo-upload-section {

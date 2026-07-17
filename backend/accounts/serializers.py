@@ -14,16 +14,17 @@ class RegisterSerializer(serializers.Serializer):
     password = serializers.CharField(write_only=True, min_length=8)
     confirm_password = serializers.CharField(write_only=True)
     # Personal details
-    phone = serializers.CharField(max_length=15)
+    phone = serializers.CharField(max_length=10)
     date_of_birth = serializers.DateField()
-    gender = serializers.ChoiceField(choices=['male', 'female', 'other'])
-    religion = serializers.ChoiceField(choices=['hindu', 'muslim', 'christian', 'sikh', 'jain', 'buddhist', 'other'])
+    gender = serializers.CharField(max_length=30)
+    religion = serializers.CharField(max_length=50)
     mother_tongue = serializers.CharField(max_length=50)
-    marital_status = serializers.ChoiceField(choices=['never_married', 'divorced', 'widowed', 'separated'])
+    marital_status = serializers.CharField(max_length=50)
     city = serializers.CharField(max_length=100)
     state = serializers.CharField(max_length=100)
     country = serializers.CharField(max_length=100, default='India')
-    education = serializers.ChoiceField(choices=['high_school', 'diploma', 'bachelors', 'masters', 'phd', 'other'])
+    education = serializers.CharField(max_length=50)
+    degree = serializers.CharField(max_length=100, required=False, allow_blank=True)
     occupation = serializers.CharField(max_length=100)
     # Optional
     caste = serializers.CharField(max_length=100, required=False, allow_blank=True)
@@ -36,6 +37,14 @@ class RegisterSerializer(serializers.Serializer):
     nakshatra = serializers.CharField(max_length=50, required=False, allow_blank=True)
     birth_place = serializers.CharField(max_length=100, required=False, allow_blank=True)
     birth_time = serializers.TimeField(required=False, allow_null=True)
+    # Family
+    father_name = serializers.CharField(max_length=150, required=False, allow_blank=True)
+    father_occupation = serializers.CharField(max_length=100, required=False, allow_blank=True)
+    mother_name = serializers.CharField(max_length=150, required=False, allow_blank=True)
+    mother_occupation = serializers.CharField(max_length=100, required=False, allow_blank=True)
+    number_of_brothers = serializers.IntegerField(required=False, allow_null=True, min_value=0)
+    number_of_sisters = serializers.IntegerField(required=False, allow_null=True, min_value=0)
+    sibling_details = serializers.CharField(required=False, allow_blank=True)
     photo = serializers.ImageField(required=False, allow_null=True)
 
     def validate_email(self, value):
@@ -45,8 +54,8 @@ class RegisterSerializer(serializers.Serializer):
 
     def validate_phone(self, value):
         import re
-        if not re.match(r'^\+?[0-9]{10,15}$', value):
-            raise serializers.ValidationError('Enter a valid phone number (10-15 digits).')
+        if not re.match(r'^[0-9]{10}$', value):
+            raise serializers.ValidationError('Enter a valid 10-digit phone number.')
         return value
 
     def validate_password(self, value):
@@ -81,10 +90,12 @@ class RegisterSerializer(serializers.Serializer):
         validated_data.pop('confirm_password')
         photo = validated_data.pop('photo', None)
         profile_fields = ['phone', 'date_of_birth', 'gender', 'religion', 'mother_tongue',
-                          'marital_status', 'city', 'state', 'country', 'education',
+                          'marital_status', 'city', 'state', 'country', 'education', 'degree',
                           'occupation', 'caste', 'annual_income', 'about_me',
                           'height', 'weight', 'present_address',
-                          'zodiac_sign', 'nakshatra', 'birth_place', 'birth_time']
+                          'zodiac_sign', 'nakshatra', 'birth_place', 'birth_time',
+                          'father_name', 'father_occupation', 'mother_name', 'mother_occupation',
+                          'number_of_brothers', 'number_of_sisters', 'sibling_details']
         profile_data = {k: validated_data.pop(k, '') for k in profile_fields}
 
         user = User.objects.create_user(

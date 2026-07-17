@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { useGoogleLogin } from '@react-oauth/google';
+import { GoogleLogin } from '@react-oauth/google';
 import api from '../api/axios';
 import toast from 'react-hot-toast';
 
@@ -31,10 +31,10 @@ export default function Login() {
     }
   };
 
-  const handleGoogleSuccess = async (tokenResponse) => {
+  const handleGoogleSuccess = async (credentialResponse) => {
     setGoogleLoading(true);
     try {
-      const { data } = await api.post('/auth/google/', { credential: tokenResponse.credential });
+      const { data } = await api.post('/auth/google/', { credential: credentialResponse.credential });
       login(data);
       if (data.is_new_user) {
         toast.success(`Welcome! Your ID is ${data.user.user_id}. Please complete your profile.`);
@@ -52,12 +52,6 @@ export default function Login() {
     }
   };
 
-  const googleLogin = useGoogleLogin({
-    onSuccess: handleGoogleSuccess,
-    onError: () => toast.error('Google login failed'),
-    flow: 'implicit',
-  });
-
   return (
     <div className="auth-page">
       <div className="auth-card">
@@ -67,15 +61,18 @@ export default function Login() {
         </div>
 
         {/* Google Login Button */}
-        <button
-          type="button"
-          className="btn-google"
-          onClick={() => googleLogin()}
-          disabled={googleLoading}
-        >
-          <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" width="20" />
-          {googleLoading ? 'Signing in with Google...' : 'Continue with Google'}
-        </button>
+        <div className="google-btn-wrap">
+          {googleLoading ? (
+            <button type="button" className="btn-google" disabled>Signing in with Google...</button>
+          ) : (
+            <GoogleLogin
+              onSuccess={handleGoogleSuccess}
+              onError={() => toast.error('Google login failed')}
+              text="continue_with"
+              width="100%"
+            />
+          )}
+        </div>
 
         <div className="divider"><span>or sign in with email</span></div>
 

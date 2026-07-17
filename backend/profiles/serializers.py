@@ -1,8 +1,10 @@
 from rest_framework import serializers
 from django.core.exceptions import ValidationError as DjangoValidationError
 from matrimony.validators import validate_uploaded_image
-from .models import Profile, PartnerExpectation, ProfileView
+from .models import Profile, PartnerExpectation, ProfileView, ProfileUnlock
 from accounts.serializers import UserSerializer
+
+LOCKED_FIELDS = ['phone', 'present_address', 'sibling_details']
 
 
 class PartnerExpectationSerializer(serializers.ModelSerializer):
@@ -16,6 +18,7 @@ class ProfileSerializer(serializers.ModelSerializer):
     expectation = PartnerExpectationSerializer(read_only=True)
     age = serializers.SerializerMethodField()
     photo_url = serializers.SerializerMethodField()
+    is_unlocked = serializers.SerializerMethodField()
 
     class Meta:
         model = Profile
@@ -34,6 +37,27 @@ class ProfileSerializer(serializers.ModelSerializer):
         if obj.photo and request:
             return request.build_absolute_uri(obj.photo.url)
         return None
+
+    def _can_view_locked(self, obj):
+        request = self.context.get('request')
+        user = getattr(request, 'user', None)
+        if not user or not user.is_authenticated:
+            return False
+        if obj.user_id == user.id:
+            return True
+        if user.role in ('admin', 'developer'):
+            return True
+        return ProfileUnlock.objects.filter(viewer=user, profile=obj).exists()
+
+    def get_is_unlocked(self, obj):
+        return self._can_view_locked(obj)
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        if not self._can_view_locked(instance):
+            for field in LOCKED_FIELDS:
+                data[field] = None
+        return data
 
 
 class ProfileWriteSerializer(serializers.ModelSerializer):

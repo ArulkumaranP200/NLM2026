@@ -1,40 +1,44 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../api/axios';
+import { TN_CASTES } from '../data/casteList';
+
+const RELIGIONS = ['hindu', 'muslim', 'christian', 'sikh', 'jain', 'buddhist', 'other'];
 
 export default function ProfileList() {
   const [profiles, setProfiles] = useState([]);
-  const [filters, setFilters] = useState({ gender: '', religion: '', city: '' });
+  const [filters, setFilters] = useState({ religion: '', caste: '', city: '' });
+  const [useExpectations, setUseExpectations] = useState(false);
   const [loading, setLoading] = useState(true);
-  const initialFilters = useRef(filters);
 
-  const fetchProfiles = async () => {
+  const fetchProfiles = async (opts = {}) => {
+    const expectationsOn = opts.useExpectations ?? useExpectations;
     setLoading(true);
     const params = new URLSearchParams();
-    if (filters.gender) params.append('gender', filters.gender);
-    if (filters.religion) params.append('religion', filters.religion);
-    if (filters.city) params.append('city', filters.city);
+    if (expectationsOn) {
+      params.append('my_expectations', 'true');
+    } else {
+      if (filters.religion) params.append('religion', filters.religion);
+      if (filters.caste) params.append('caste', filters.caste);
+      if (filters.city) params.append('city', filters.city);
+    }
     const { data } = await api.get(`/profiles/?${params}`);
     setProfiles(data);
     setLoading(false);
   };
 
   useEffect(() => {
-    const loadInitialProfiles = async () => {
-      setLoading(true);
-      const params = new URLSearchParams();
-      if (initialFilters.current.gender) params.append('gender', initialFilters.current.gender);
-      if (initialFilters.current.religion) params.append('religion', initialFilters.current.religion);
-      if (initialFilters.current.city) params.append('city', initialFilters.current.city);
-      const { data } = await api.get(`/profiles/?${params}`);
-      setProfiles(data);
-      setLoading(false);
-    };
-
-    loadInitialProfiles();
+    fetchProfiles();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleFilter = (e) => setFilters({ ...filters, [e.target.name]: e.target.value });
+
+  const handleToggleExpectations = (e) => {
+    const checked = e.target.checked;
+    setUseExpectations(checked);
+    fetchProfiles({ useExpectations: checked });
+  };
 
   return (
     <div className="profiles-page">
@@ -44,20 +48,32 @@ export default function ProfileList() {
       </div>
 
       <div className="filter-bar">
-        <select name="gender" value={filters.gender} onChange={handleFilter}>
-          <option value="">All Genders</option>
-          <option value="male">Male</option>
-          <option value="female">Female</option>
-        </select>
-        <select name="religion" value={filters.religion} onChange={handleFilter}>
-          <option value="">All Religions</option>
-          {['hindu','muslim','christian','sikh','jain','buddhist','other'].map(r => (
+        <label className="toggle-switch">
+          <input type="checkbox" checked={useExpectations} onChange={handleToggleExpectations} />
+          <span className="toggle-slider"></span>
+          <span className="toggle-label">My Expectations</span>
+        </label>
+        <select name="religion" value={filters.religion} onChange={handleFilter} disabled={useExpectations}>
+          <option value="">Any Religion</option>
+          {RELIGIONS.map(r => (
             <option key={r} value={r}>{r.charAt(0).toUpperCase() + r.slice(1)}</option>
           ))}
         </select>
-        <input name="city" placeholder="Search by city..." value={filters.city} onChange={handleFilter} />
-        <button className="btn-primary" onClick={fetchProfiles}>Search</button>
+        <select name="caste" value={filters.caste} onChange={handleFilter} disabled={useExpectations}>
+          <option value="">Any Caste</option>
+          {TN_CASTES.map(c => <option key={c} value={c}>{c}</option>)}
+        </select>
+        <input
+          name="city" placeholder="Search by city..." value={filters.city}
+          onChange={handleFilter} disabled={useExpectations}
+        />
+        <button className="btn-primary" onClick={() => fetchProfiles()} disabled={useExpectations}>Search</button>
       </div>
+      {useExpectations && (
+        <p className="expectations-hint">
+          Showing profiles matching your <Link to="/expectations">saved partner expectations</Link>.
+        </p>
+      )}
 
       {loading ? (
         <div className="loading-screen"><div className="spinner"></div></div>

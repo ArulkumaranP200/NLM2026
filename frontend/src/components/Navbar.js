@@ -23,8 +23,12 @@ export default function Navbar() {
           <>
             <Link className={isActive('/dashboard')} to="/dashboard">Dashboard</Link>
             <Link className={isActive('/profiles')} to="/profiles">Browse</Link>
-            <Link className={isActive('/profile/edit')} to="/profile/edit">My Profile</Link>
-            <Link className={isActive('/expectations')} to="/expectations">Expectations</Link>
+            {user.role === 'user' && (
+              <>
+                <Link className={isActive('/profile/edit')} to="/profile/edit">My Profile</Link>
+                <Link className={isActive('/expectations')} to="/expectations">Expectations</Link>
+              </>
+            )}
             {(user.role === 'admin' || user.role === 'developer') && (
               <Link className={isActive('/admin')} to="/admin">Admin</Link>
             )}

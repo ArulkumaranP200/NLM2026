@@ -80,6 +80,12 @@
 }
 
 /* ===== GOOGLE LOGIN BUTTON ===== */
+.google-btn-wrap {
+  margin-bottom: 16px;
+  display: flex;
+  justify-content: center;
+}
+
 .btn-google {
   width: 100%;
   display: flex;

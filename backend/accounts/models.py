@@ -116,6 +116,7 @@ class Transaction(models.Model):
         ('account_deactivated', 'Account Deactivated'),
         ('account_activated', 'Account Activated'),
         ('role_changed', 'Role Changed'),
+        ('payment', 'Payment'),
     ]
     STATUS_CHOICES = [
         ('success', 'Success'),

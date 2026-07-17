@@ -29,7 +29,7 @@ export default function DeveloperPanel() {
       formData.append('gender', 'male');
       formData.append('religion', 'other');
       formData.append('mother_tongue', 'English');
-      formData.append('marital_status', 'never_married');
+      formData.append('marital_status', 'single');
       formData.append('city', 'Admin City');
       formData.append('state', 'Admin State');
       formData.append('country', 'India');

@@ -123,6 +123,37 @@
   text-transform: capitalize;
 }
 
+/* Unlock / Paywall */
+.unlock-card {
+  background: linear-gradient(135deg, #fdecea, #fff8f0);
+  border: 1.5px dashed #e0a89c;
+  border-radius: 12px;
+  padding: 28px 24px;
+  text-align: center;
+}
+
+.unlock-icon {
+  font-size: 32px;
+  display: block;
+  margin-bottom: 10px;
+}
+
+.unlock-card p {
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 4px;
+}
+
+.unlock-price {
+  font-weight: 700;
+  color: #c0392b;
+  margin-bottom: 16px !important;
+}
+
+.unlock-card .btn-primary {
+  padding: 12px 28px;
+}
+
 /* Expectation Section */
 .expectation-section { background: #fffbf0; }
 .expectation-desc {

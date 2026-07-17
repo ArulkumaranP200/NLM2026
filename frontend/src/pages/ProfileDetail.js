@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../api/axios';
+import toast from 'react-hot-toast';
 
 export default function ProfileDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [paying, setPaying] = useState(false);
 
   useEffect(() => {
     api.get(`/profiles/${id}/`)
@@ -15,10 +17,26 @@ export default function ProfileDetail() {
       .finally(() => setLoading(false));
   }, [id, navigate]);
 
+  const handleUnlock = async () => {
+    setPaying(true);
+    try {
+      const { data } = await api.post(`/profiles/${id}/unlock/`);
+      setProfile(data);
+      toast.success('Payment successful! Contact details unlocked.');
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Payment failed. Please try again.');
+    } finally {
+      setPaying(false);
+    }
+  };
+
   if (loading) return <div className="loading-screen"><div className="spinner"></div></div>;
   if (!profile) return null;
 
-  const { user, expectation } = profile;
+  const { user, expectation, is_unlocked } = profile;
+  const hasFamilyInfo = profile.father_name || profile.father_occupation ||
+    profile.mother_name || profile.mother_occupation ||
+    profile.number_of_brothers || profile.number_of_sisters;
 
   return (
     <div className="profile-detail-page">
@@ -82,6 +100,54 @@ export default function ProfileDetail() {
               </div>
             ))}
           </div>
+        </div>
+
+        {hasFamilyInfo && (
+          <div className="detail-section">
+            <h3>Family Details</h3>
+            <div className="detail-grid">
+              {[
+                ["Father's Name", profile.father_name],
+                ["Father's Occupation", profile.father_occupation],
+                ["Mother's Name", profile.mother_name],
+                ["Mother's Occupation", profile.mother_occupation],
+                ['Brothers', profile.number_of_brothers],
+                ['Sisters', profile.number_of_sisters],
+              ].filter(([, v]) => v || v === 0).map(([label, value]) => (
+                <div key={label} className="detail-item">
+                  <span className="detail-label">{label}</span>
+                  <span className="detail-value">{value}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div className="detail-section">
+          <h3>Contact & More</h3>
+          {is_unlocked ? (
+            <div className="detail-grid">
+              {[
+                ['Phone', profile.phone],
+                ['Present Address', profile.present_address],
+                ['Sibling Details', profile.sibling_details],
+              ].filter(([, v]) => v).map(([label, value]) => (
+                <div key={label} className="detail-item">
+                  <span className="detail-label">{label}</span>
+                  <span className="detail-value">{value}</span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="unlock-card">
+              <span className="unlock-icon">🔒</span>
+              <p>Phone number, address and sibling details are hidden.</p>
+              <p className="unlock-price">Pay ₹99 to unlock this profile's remaining details</p>
+              <button className="btn-primary" onClick={handleUnlock} disabled={paying}>
+                {paying ? 'Processing payment...' : '🔓 Pay ₹99 & Unlock'}
+              </button>
+            </div>
+          )}
         </div>
 
         {expectation && (

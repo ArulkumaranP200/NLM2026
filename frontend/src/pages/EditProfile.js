@@ -6,6 +6,8 @@ const INITIAL = {
   date_of_birth: '', gender: '', religion: '', caste: '', mother_tongue: '',
   marital_status: '', height: '', weight: '', education: '', occupation: '',
   annual_income: '', city: '', state: '', country: 'India', about_me: '', phone: '',
+  father_name: '', father_occupation: '', mother_name: '', mother_occupation: '',
+  number_of_brothers: '', number_of_sisters: '', sibling_details: '',
 };
 
 export default function EditProfile() {
@@ -106,10 +108,10 @@ export default function EditProfile() {
               <label>Marital Status</label>
               <select name="marital_status" value={form.marital_status} onChange={handleChange}>
                 <option value="">Select Status</option>
-                <option value="never_married">Never Married</option>
+                <option value="single">Single</option>
                 <option value="divorced">Divorced</option>
                 <option value="widowed">Widowed</option>
-                <option value="separated">Separated</option>
+                <option value="other">Other</option>
               </select>
             </div>
             <div className="form-group">
@@ -150,6 +152,40 @@ export default function EditProfile() {
               <label>Annual Income</label>
               <input name="annual_income" placeholder="e.g. 5-10 LPA" value={form.annual_income} onChange={handleChange} />
             </div>
+          </div>
+        </div>
+
+        <div className="form-section">
+          <h3>Family Details</h3>
+          <div className="form-grid">
+            <div className="form-group">
+              <label>Father's Name</label>
+              <input name="father_name" placeholder="Enter father's name" value={form.father_name} onChange={handleChange} />
+            </div>
+            <div className="form-group">
+              <label>Father's Occupation</label>
+              <input name="father_occupation" placeholder="e.g. Retired, Business" value={form.father_occupation} onChange={handleChange} />
+            </div>
+            <div className="form-group">
+              <label>Mother's Name</label>
+              <input name="mother_name" placeholder="Enter mother's name" value={form.mother_name} onChange={handleChange} />
+            </div>
+            <div className="form-group">
+              <label>Mother's Occupation</label>
+              <input name="mother_occupation" placeholder="e.g. Homemaker, Teacher" value={form.mother_occupation} onChange={handleChange} />
+            </div>
+            <div className="form-group">
+              <label>Number of Brothers</label>
+              <input type="number" min="0" max="20" name="number_of_brothers" placeholder="e.g. 1" value={form.number_of_brothers} onChange={handleChange} />
+            </div>
+            <div className="form-group">
+              <label>Number of Sisters</label>
+              <input type="number" min="0" max="20" name="number_of_sisters" placeholder="e.g. 1" value={form.number_of_sisters} onChange={handleChange} />
+            </div>
+          </div>
+          <div className="form-group" style={{ marginTop: '4px' }}>
+            <label>Sibling Details</label>
+            <textarea name="sibling_details" rows={3} placeholder="e.g. Elder brother married, working as an engineer in Chennai" value={form.sibling_details} onChange={handleChange} />
           </div>
         </div>
 
