@@ -3,6 +3,25 @@ import { useParams, useNavigate } from 'react-router-dom';
 import api from '../api/axios';
 import toast from 'react-hot-toast';
 
+const RAZORPAY_SCRIPT_SRC = 'https://checkout.razorpay.com/v1/checkout.js';
+
+function loadRazorpayScript() {
+  return new Promise((resolve, reject) => {
+    if (window.Razorpay) { resolve(); return; }
+    const existing = document.querySelector(`script[src="${RAZORPAY_SCRIPT_SRC}"]`);
+    if (existing) {
+      existing.addEventListener('load', () => resolve());
+      existing.addEventListener('error', () => reject(new Error('Failed to load Razorpay')));
+      return;
+    }
+    const script = document.createElement('script');
+    script.src = RAZORPAY_SCRIPT_SRC;
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error('Failed to load Razorpay'));
+    document.body.appendChild(script);
+  });
+}
+
 export default function ProfileDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -20,12 +39,43 @@ export default function ProfileDetail() {
   const handleUnlock = async () => {
     setPaying(true);
     try {
-      const { data } = await api.post(`/profiles/${id}/unlock/`);
-      setProfile(data);
-      toast.success('Payment successful! Contact details unlocked.');
+      await loadRazorpayScript();
+      const { data: order } = await api.post(`/profiles/${id}/create-payment-order/`);
+
+      const rzp = new window.Razorpay({
+        key: order.key_id,
+        amount: order.amount,
+        currency: order.currency,
+        order_id: order.order_id,
+        name: 'UTM Matrimony',
+        description: `Unlock ${profile.user.full_name}'s contact details`,
+        theme: { color: '#c0392b' },
+        handler: async (response) => {
+          try {
+            const { data } = await api.post(`/profiles/${id}/verify-payment/`, {
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
+            });
+            setProfile(data);
+            toast.success('Payment successful! Contact details unlocked.');
+          } catch (err) {
+            toast.error(err.response?.data?.error || 'Payment verification failed. Please contact support.');
+          } finally {
+            setPaying(false);
+          }
+        },
+        modal: {
+          ondismiss: () => setPaying(false),
+        },
+      });
+      rzp.on('payment.failed', () => {
+        toast.error('Payment failed. Please try again.');
+        setPaying(false);
+      });
+      rzp.open();
     } catch (err) {
-      toast.error(err.response?.data?.error || 'Payment failed. Please try again.');
-    } finally {
+      toast.error(err.response?.data?.error || 'Could not start payment. Please try again.');
       setPaying(false);
     }
   };

@@ -140,10 +140,16 @@ SIMPLE_JWT = {
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "https://nlm-2026.vercel.app",
+    # Expo web dev server (mobileapp/), local testing only.
+    "http://localhost:8081",
+    "http://localhost:8084",
 ]
 CORS_ALLOW_CREDENTIALS = True
 
 GOOGLE_CLIENT_ID = config('GOOGLE_CLIENT_ID', default='')
+
+RAZORPAY_KEY_ID = config('RAZORPAY_KEY_ID', default='')
+RAZORPAY_KEY_SECRET = config('RAZORPAY_KEY_SECRET', default='')
 
 LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'UTC'

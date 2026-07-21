@@ -1,6 +1,8 @@
 from datetime import date
 from django.db.models import Q
 from decimal import Decimal
+import razorpay
+from django.conf import settings
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status, permissions
@@ -10,8 +12,13 @@ from .serializers import (
     ProfileSerializer, ProfileWriteSerializer,
     PartnerExpectationSerializer, ProfileViewSerializer
 )
+from .castes import castes_for_religion, all_castes
 
 PROFILE_UNLOCK_PRICE = Decimal('99.00')
+
+
+def get_razorpay_client():
+    return razorpay.Client(auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET))
 
 OPPOSITE_GENDER = {'male': 'female', 'female': 'male'}
 
@@ -25,6 +32,21 @@ def _years_ago(base_date, years):
         return base_date.replace(year=base_date.year - years)
     except ValueError:
         return base_date.replace(year=base_date.year - years, day=28)
+
+
+class CasteListView(APIView):
+    """Public — must be reachable from the registration form before login."""
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request):
+        religion = request.query_params.get('religion')
+        if religion:
+            castes = castes_for_religion(religion)
+            if castes is None:
+                return Response({'error': 'Unknown religion.'}, status=400)
+        else:
+            castes = all_castes()
+        return Response(castes)
 
 
 class MyProfileView(APIView):
@@ -103,8 +125,8 @@ class ProfileDetailView(APIView):
         return Response(serializer.data)
 
 
-class ProfileUnlockView(APIView):
-    """Simulated payment: pays a fixed fee to unlock one profile's locked fields for the viewer."""
+class CreatePaymentOrderView(APIView):
+    """Step 1: create a Razorpay order for unlocking one profile's locked fields."""
     def post(self, request, pk):
         try:
             profile = Profile.objects.get(pk=pk)
@@ -112,15 +134,74 @@ class ProfileUnlockView(APIView):
             return Response({'error': 'Not found'}, status=404)
         if profile.user_id == request.user.id:
             return Response({'error': 'This is your own profile.'}, status=400)
+        if ProfileUnlock.objects.filter(viewer=request.user, profile=profile).exists():
+            return Response({'error': 'Already unlocked.'}, status=400)
+        if not settings.RAZORPAY_KEY_ID or not settings.RAZORPAY_KEY_SECRET:
+            return Response({'error': 'Payments are not configured yet. Please try again later.'}, status=503)
+
+        amount_paise = int(PROFILE_UNLOCK_PRICE * 100)
+        try:
+            order = get_razorpay_client().order.create({
+                'amount': amount_paise,
+                'currency': 'INR',
+                'notes': {
+                    'viewer_user_id': request.user.user_id,
+                    'profile_id': str(profile.id),
+                },
+            })
+        except razorpay.errors.BadRequestError as exc:
+            return Response({'error': f'Could not start payment: {exc}'}, status=502)
+
+        return Response({
+            'order_id': order['id'],
+            'amount': amount_paise,
+            'currency': 'INR',
+            'key_id': settings.RAZORPAY_KEY_ID,
+        })
+
+
+class VerifyPaymentView(APIView):
+    """Step 2: verify the Razorpay payment signature, then unlock the profile."""
+    def post(self, request, pk):
+        try:
+            profile = Profile.objects.get(pk=pk)
+        except Profile.DoesNotExist:
+            return Response({'error': 'Not found'}, status=404)
+
+        order_id = request.data.get('razorpay_order_id')
+        payment_id = request.data.get('razorpay_payment_id')
+        signature = request.data.get('razorpay_signature')
+        if not all([order_id, payment_id, signature]):
+            return Response({'error': 'Missing payment verification fields.'}, status=400)
+
+        try:
+            get_razorpay_client().utility.verify_payment_signature({
+                'razorpay_order_id': order_id,
+                'razorpay_payment_id': payment_id,
+                'razorpay_signature': signature,
+            })
+        except razorpay.errors.SignatureVerificationError:
+            Transaction.objects.create(
+                user=request.user, transaction_type='payment', status='failed',
+                description=f'Payment signature verification failed while unlocking {profile.user.user_id}',
+            )
+            return Response({'error': 'Payment verification failed.'}, status=400)
 
         unlock, created = ProfileUnlock.objects.get_or_create(
             viewer=request.user, profile=profile,
-            defaults={'amount': PROFILE_UNLOCK_PRICE},
+            defaults={
+                'amount': PROFILE_UNLOCK_PRICE,
+                'razorpay_order_id': order_id,
+                'razorpay_payment_id': payment_id,
+            },
         )
         if created:
             Transaction.objects.create(
                 user=request.user, transaction_type='payment', status='success',
-                description=f'Paid ₹{unlock.amount} to unlock contact details of {profile.user.user_id}',
+                description=(
+                    f'Paid ₹{unlock.amount} via Razorpay to unlock contact details of '
+                    f'{profile.user.user_id} (payment_id={payment_id})'
+                ),
             )
         serializer = ProfileSerializer(profile, context={'request': request})
         return Response(serializer.data, status=status.HTTP_200_OK)

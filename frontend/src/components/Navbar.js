@@ -16,7 +16,7 @@ export default function Navbar() {
   return (
     <nav className="navbar">
       <div className="nav-brand">
-        <Link to="/">💑 New Life Matrimony</Link>
+        <Link to="/">💑 UTM Matrimony</Link>
       </div>
       <div className="nav-links">
         {user ? (

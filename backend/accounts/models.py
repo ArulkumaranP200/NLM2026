@@ -3,10 +3,10 @@ from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, Permis
 from django.db import models
 
 
-def generate_nlm_id():
-    """Generate unique NLM + 4 digit ID, retry if exists."""
+def generate_utm_id():
+    """Generate unique UTM + 4 digit ID, retry if exists."""
     while True:
-        uid = f"NLM{random.randint(1000, 9999)}"
+        uid = f"UTM{random.randint(1000, 9999)}"
         if not User.objects.filter(user_id=uid).exists():
             return uid
 
@@ -17,7 +17,7 @@ class UserManager(BaseUserManager):
             raise ValueError('Email is required')
         email = self.normalize_email(email)
         if 'user_id' not in extra_fields or not extra_fields['user_id']:
-            extra_fields['user_id'] = generate_nlm_id()
+            extra_fields['user_id'] = generate_utm_id()
         user = self.model(email=email, **extra_fields)
         user.set_password(password)
         user.save(using=self._db)

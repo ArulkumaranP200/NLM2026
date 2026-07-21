@@ -15,7 +15,18 @@ export default function EditProfile() {
   const [photo, setPhoto] = useState(null);
   const [photoPreview, setPhotoPreview] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [casteOptions, setCasteOptions] = useState([]);
   const fileRef = useRef();
+
+  const fetchCastes = async (religion) => {
+    if (!religion) { setCasteOptions([]); return; }
+    try {
+      const { data } = await api.get('/profiles/castes/', { params: { religion } });
+      setCasteOptions(data);
+    } catch {
+      setCasteOptions([]);
+    }
+  };
 
   useEffect(() => {
     api.get('/profiles/me/').then(({ data }) => {
@@ -23,10 +34,17 @@ export default function EditProfile() {
       Object.keys(INITIAL).forEach((k) => { filled[k] = data[k] || ''; });
       setForm(filled);
       if (data.photo_url) setPhotoPreview(data.photo_url);
+      if (data.religion) fetchCastes(data.religion);
     });
   }, []);
 
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
+
+  const handleReligionChange = (e) => {
+    const religion = e.target.value;
+    setForm((f) => ({ ...f, religion, caste: '' }));
+    fetchCastes(religion);
+  };
 
   const handlePhoto = (e) => {
     const file = e.target.files[0];
@@ -89,7 +107,7 @@ export default function EditProfile() {
             </div>
             <div className="form-group">
               <label>Religion</label>
-              <select name="religion" value={form.religion} onChange={handleChange}>
+              <select name="religion" value={form.religion} onChange={handleReligionChange}>
                 <option value="">Select Religion</option>
                 {['hindu','muslim','christian','sikh','jain','buddhist','other'].map(r => (
                   <option key={r} value={r}>{r.charAt(0).toUpperCase() + r.slice(1)}</option>
@@ -98,7 +116,10 @@ export default function EditProfile() {
             </div>
             <div className="form-group">
               <label>Caste</label>
-              <input name="caste" placeholder="Enter caste" value={form.caste} onChange={handleChange} />
+              <select name="caste" value={form.caste} onChange={handleChange} disabled={!form.religion}>
+                <option value="">{form.religion ? 'Select Caste' : 'Select religion first'}</option>
+                {casteOptions.map((c) => <option key={c} value={c}>{c}</option>)}
+              </select>
             </div>
             <div className="form-group">
               <label>Mother Tongue</label>

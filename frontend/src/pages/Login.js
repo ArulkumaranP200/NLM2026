@@ -56,7 +56,7 @@ export default function Login() {
     <div className="auth-page">
       <div className="auth-card">
         <div className="auth-header">
-          <h1>💑 New Life Matrimony</h1>
+          <h1>💑 UTM Matrimony</h1>
           <p>Welcome back! Sign in to continue</p>
         </div>
 

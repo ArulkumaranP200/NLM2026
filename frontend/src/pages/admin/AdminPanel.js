@@ -76,7 +76,7 @@ export default function AdminPanel() {
         <div className="admin-table-wrap">
           <table className="admin-table">
             <thead>
-              <tr><th>NLM ID</th><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th>Joined</th><th>Actions</th></tr>
+              <tr><th>UTM ID</th><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th>Joined</th><th>Actions</th></tr>
             </thead>
             <tbody>
               {users.map(user => (

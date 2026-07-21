@@ -1,15 +1,24 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../api/axios';
-import { TN_CASTES } from '../data/casteList';
 
 const RELIGIONS = ['hindu', 'muslim', 'christian', 'sikh', 'jain', 'buddhist', 'other'];
 
 export default function ProfileList() {
   const [profiles, setProfiles] = useState([]);
   const [filters, setFilters] = useState({ religion: '', caste: '', city: '' });
+  const [casteOptions, setCasteOptions] = useState([]);
   const [useExpectations, setUseExpectations] = useState(false);
   const [loading, setLoading] = useState(true);
+
+  const fetchCastes = async (religion) => {
+    try {
+      const { data } = await api.get('/profiles/castes/', { params: religion ? { religion } : {} });
+      setCasteOptions(data);
+    } catch {
+      setCasteOptions([]);
+    }
+  };
 
   const fetchProfiles = async (opts = {}) => {
     const expectationsOn = opts.useExpectations ?? useExpectations;
@@ -29,10 +38,17 @@ export default function ProfileList() {
 
   useEffect(() => {
     fetchProfiles();
+    fetchCastes();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleFilter = (e) => setFilters({ ...filters, [e.target.name]: e.target.value });
+
+  const handleReligionFilter = (e) => {
+    const religion = e.target.value;
+    setFilters((f) => ({ ...f, religion, caste: '' }));
+    fetchCastes(religion);
+  };
 
   const handleToggleExpectations = (e) => {
     const checked = e.target.checked;
@@ -53,7 +69,7 @@ export default function ProfileList() {
           <span className="toggle-slider"></span>
           <span className="toggle-label">My Expectations</span>
         </label>
-        <select name="religion" value={filters.religion} onChange={handleFilter} disabled={useExpectations}>
+        <select name="religion" value={filters.religion} onChange={handleReligionFilter} disabled={useExpectations}>
           <option value="">Any Religion</option>
           {RELIGIONS.map(r => (
             <option key={r} value={r}>{r.charAt(0).toUpperCase() + r.slice(1)}</option>
@@ -61,7 +77,7 @@ export default function ProfileList() {
         </select>
         <select name="caste" value={filters.caste} onChange={handleFilter} disabled={useExpectations}>
           <option value="">Any Caste</option>
-          {TN_CASTES.map(c => <option key={c} value={c}>{c}</option>)}
+          {casteOptions.map(c => <option key={c} value={c}>{c}</option>)}
         </select>
         <input
           name="city" placeholder="Search by city..." value={filters.city}

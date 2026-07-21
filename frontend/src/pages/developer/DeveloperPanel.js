@@ -101,7 +101,7 @@ export default function DeveloperPanel() {
               <div className="detail-row"><span>Frontend</span><span>React 18</span></div>
               <div className="detail-row"><span>Database</span><span>PostgreSQL 18</span></div>
               <div className="detail-row"><span>Auth</span><span>JWT (SimpleJWT)</span></div>
-              <div className="detail-row"><span>User ID Format</span><span>NLM + 4 digits</span></div>
+              <div className="detail-row"><span>User ID Format</span><span>UTM + 4 digits</span></div>
             </div>
           </div>
         </div>
@@ -112,7 +112,7 @@ export default function DeveloperPanel() {
         <div className="admin-table-wrap">
           <table className="admin-table">
             <thead>
-              <tr><th>NLM ID</th><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th>Joined</th><th>Actions</th></tr>
+              <tr><th>UTM ID</th><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th>Joined</th><th>Actions</th></tr>
             </thead>
             <tbody>
               {users.map(user => (

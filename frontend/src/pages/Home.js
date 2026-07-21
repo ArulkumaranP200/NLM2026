@@ -9,7 +9,7 @@ export default function Home() {
       <section className="hero">
         <div className="hero-content">
           <h1>Find Your Perfect Life Partner</h1>
-          <p>New Life Matrimony connects hearts across communities. Start your journey to a beautiful life together.</p>
+          <p>UTM Matrimony connects hearts across communities. Start your journey to a beautiful life together.</p>
           <div className="hero-actions">
             {user ? (
               <Link to="/profiles" className="btn-primary btn-lg">Browse Profiles</Link>
@@ -25,7 +25,7 @@ export default function Home() {
       </section>
 
       <section className="features">
-        <h2>Why Choose New Life Matrimony?</h2>
+        <h2>Why Choose UTM Matrimony?</h2>
         <div className="features-grid">
           {[
             { icon: '🔒', title: 'Verified Profiles', desc: 'All profiles are reviewed for authenticity and safety.' },
@@ -44,7 +44,7 @@ export default function Home() {
 
       <section className="cta-section">
         <h2>Ready to Find Your Life Partner?</h2>
-        <p>Join thousands of happy couples who found their match on New Life Matrimony</p>
+        <p>Join thousands of happy couples who found their match on UTM Matrimony</p>
         {!user && <Link to="/register" className="btn-primary btn-lg">Create Free Profile</Link>}
       </section>
     </div>

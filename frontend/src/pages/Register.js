@@ -6,7 +6,6 @@ import api from '../api/axios';
 import toast from 'react-hot-toast';
 import '../styles/register.css';
 import { INDIA_STATES, INDIA_STATES_CITIES } from '../data/indiaCities';
-import { TN_CASTES as TN_CASTES_BASE } from '../data/casteList';
 
 const INITIAL = {
   // Account
@@ -38,8 +37,6 @@ const INDIAN_LANGUAGES = [
   'Bengali', 'Odia', 'Assamese', 'Urdu', 'Sanskrit', 'Konkani', 'Kashmiri', 'Sindhi',
   'Manipuri', 'Bodo', 'Dogri', 'Maithili', 'Nepali', 'Santali', 'Tulu', 'English', 'Other',
 ];
-
-const TN_CASTES = [...TN_CASTES_BASE, 'Other', 'No / Prefer not to say'];
 
 const ZODIAC_SIGNS = [
   'Mesham (Aries)', 'Rishabam (Taurus)', 'Mithunam (Gemini)', 'Kadagam (Cancer)',
@@ -80,6 +77,7 @@ export default function Register() {
   const [errors, setErrors] = useState({});
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [casteOptions, setCasteOptions] = useState([]);
   const fileRef = useRef();
   const { login } = useAuth();
   const navigate = useNavigate();
@@ -88,6 +86,23 @@ export default function Register() {
     const { name, value } = e.target;
     setForm(f => ({ ...f, [name]: value }));
     setErrors(er => ({ ...er, [name]: '' }));
+  };
+
+  const fetchCastes = async (religion) => {
+    if (!religion) { setCasteOptions([]); return; }
+    try {
+      const { data } = await api.get('/profiles/castes/', { params: { religion } });
+      setCasteOptions(data);
+    } catch {
+      setCasteOptions([]);
+    }
+  };
+
+  const handleReligionChange = (e) => {
+    const religion = e.target.value;
+    setForm(f => ({ ...f, religion, caste: '', caste_other: '' }));
+    setErrors(er => ({ ...er, religion: '', caste: '', caste_other: '' }));
+    fetchCastes(religion);
   };
 
   const handlePhoneChange = (e) => {
@@ -296,7 +311,7 @@ export default function Register() {
     <div className="register-page">
       <div className="register-card">
         <div className="register-header">
-          <h1>💑 New Life Matrimony</h1>
+          <h1>💑 UTM Matrimony</h1>
           <p>Create your profile and find your life partner</p>
         </div>
 
@@ -378,7 +393,7 @@ export default function Register() {
 
                 <div className="form-group">
                   <label>Religion <span className="required">*</span></label>
-                  <select name="religion" value={form.religion} onChange={handleChange} className={errors.religion ? 'input-error' : ''}>
+                  <select name="religion" value={form.religion} onChange={handleReligionChange} className={errors.religion ? 'input-error' : ''}>
                     <option value="">Select Religion</option>
                     {['hindu','muslim','christian','sikh','jain','buddhist','other'].map(r => (
                       <option key={r} value={r}>{r.charAt(0).toUpperCase() + r.slice(1)}</option>
@@ -431,9 +446,13 @@ export default function Register() {
 
                 <div className="form-group">
                   <label>Caste <span className="optional">(optional)</span></label>
-                  <select name="caste" value={form.caste} onChange={handleChange} className={errors.caste ? 'input-error' : ''}>
-                    <option value="">Select Caste</option>
-                    {TN_CASTES.map(c => <option key={c} value={c}>{c}</option>)}
+                  <select
+                    name="caste" value={form.caste} onChange={handleChange}
+                    className={errors.caste ? 'input-error' : ''}
+                    disabled={!form.religion}
+                  >
+                    <option value="">{form.religion ? 'Select Caste' : 'Select religion first'}</option>
+                    {casteOptions.map(c => <option key={c} value={c}>{c}</option>)}
                   </select>
                   {form.caste === 'Other' && (
                     <input
